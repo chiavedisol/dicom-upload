@@ -84,7 +84,7 @@ export default function SettingsPage() {
 
     setTesting(true);
     setTestResult(null);
-    
+
     try {
       const response = await fetch('/api/settings/test-connection', {
         method: 'POST',
@@ -165,209 +165,253 @@ export default function SettingsPage() {
   return (
     <Layout requireAuth={true} requireAdmin={true}>
       <Head>
-        <title>設定 - DICOM Batch Uploader</title>
+        <title>Settings - DICOM Cloud</title>
       </Head>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Google Cloud設定</h1>
-          <p className="mt-2 text-gray-600">
-            Google Cloud Healthcare APIの接続設定を管理します
-          </p>
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
+            <p className="mt-1 text-foreground-muted">
+              Configure Google Cloud Healthcare API connection.
+            </p>
+          </div>
         </div>
 
-        {/* Google Cloud基本設定 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            基本設定
+        {/* Google Cloud Basic Settings */}
+        <div className="glass-panel rounded-2xl p-8 animate-fade-in">
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            Cloud Configuration
           </h2>
 
-          <div className="space-y-4">
-            {/* プロジェクトID */}
+          <div className="space-y-6">
+            {/* Project ID */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Google Cloud プロジェクトID <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                Google Cloud Project ID <span className="text-error">*</span>
               </label>
               <input
                 type="text"
                 value={config.gcpProjectId}
                 onChange={(e) => setConfig({ ...config, gcpProjectId: e.target.value })}
-                placeholder="your-project-id"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., dicom-project-123"
+                className="w-full px-4 py-3 bg-background/50 border border-white/10 rounded-xl text-white placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
               />
-              <p className="mt-1 text-sm text-gray-500">
-                例: dicom-first-project
+              <p className="mt-2 text-xs text-foreground-muted">
+                The ID of your Google Cloud project containing the Healthcare API dataset.
               </p>
             </div>
 
-            {/* リージョン */}
+            {/* Region */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                リージョン <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                Region <span className="text-error">*</span>
               </label>
-              <select
-                value={config.gcpLocation}
-                onChange={(e) => setConfig({ ...config, gcpLocation: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="asia-northeast1">asia-northeast1 (東京)</option>
-                <option value="us-central1">us-central1</option>
-                <option value="us-east1">us-east1</option>
-                <option value="us-west1">us-west1</option>
-                <option value="europe-west2">europe-west2</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={config.gcpLocation}
+                  onChange={(e) => setConfig({ ...config, gcpLocation: e.target.value })}
+                  className="w-full px-4 py-3 bg-background/50 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none"
+                >
+                  <option value="asia-northeast1" className="bg-background">asia-northeast1 (Tokyo)</option>
+                  <option value="us-central1" className="bg-background">us-central1 (Iowa)</option>
+                  <option value="us-east1" className="bg-background">us-east1 (South Carolina)</option>
+                  <option value="us-west1" className="bg-background">us-west1 (Oregon)</option>
+                  <option value="europe-west2" className="bg-background">europe-west2 (London)</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                  <svg className="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
-            {/* データセットID */}
+            {/* Dataset ID */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                データセットID
+              <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                Dataset ID
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <input
                   type="text"
                   value={config.gcpDatasetId}
                   onChange={(e) => setConfig({ ...config, gcpDatasetId: e.target.value })}
                   placeholder="my-dataset"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-3 bg-background/50 border border-white/10 rounded-xl text-white placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                 />
                 <button
                   onClick={handleLoadDatasets}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 bg-surface hover:bg-surface-highlight border border-white/10 rounded-xl text-sm font-medium text-white transition-colors whitespace-nowrap"
                 >
-                  一覧取得
+                  Load List
                 </button>
               </div>
               {datasets.length > 0 && (
-                <select
-                  onChange={(e) => setConfig({ ...config, gcpDatasetId: e.target.value })}
-                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">選択してください</option>
-                  {datasets.map((ds) => (
-                    <option key={ds} value={ds}>
-                      {ds}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-2 relative">
+                  <select
+                    onChange={(e) => setConfig({ ...config, gcpDatasetId: e.target.value })}
+                    className="w-full px-4 py-2 bg-background/30 border border-white/5 rounded-lg text-sm text-foreground-muted focus:outline-none focus:ring-1 focus:ring-primary/50 appearance-none"
+                  >
+                    <option value="" className="bg-background">Select from list...</option>
+                    {datasets.map((ds) => (
+                      <option key={ds} value={ds} className="bg-background">
+                        {ds}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 
-            {/* DICOM StoreID */}
+            {/* DICOM Store ID */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
                 DICOM Store ID
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <input
                   type="text"
                   value={config.gcpDicomStoreId}
                   onChange={(e) => setConfig({ ...config, gcpDicomStoreId: e.target.value })}
                   placeholder="my-dicom-store"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-3 bg-background/50 border border-white/10 rounded-xl text-white placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                 />
                 <button
                   onClick={handleLoadDicomStores}
                   disabled={!config.gcpDatasetId}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-surface hover:bg-surface-highlight border border-white/10 rounded-xl text-sm font-medium text-white transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  一覧取得
+                  Load List
                 </button>
               </div>
               {dicomStores.length > 0 && (
-                <select
-                  onChange={(e) => setConfig({ ...config, gcpDicomStoreId: e.target.value })}
-                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">選択してください</option>
-                  {dicomStores.map((store) => (
-                    <option key={store} value={store}>
-                      {store}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-2 relative">
+                  <select
+                    onChange={(e) => setConfig({ ...config, gcpDicomStoreId: e.target.value })}
+                    className="w-full px-4 py-2 bg-background/30 border border-white/5 rounded-lg text-sm text-foreground-muted focus:outline-none focus:ring-1 focus:ring-primary/50 appearance-none"
+                  >
+                    <option value="" className="bg-background">Select from list...</option>
+                    {dicomStores.map((store) => (
+                      <option key={store} value={store} className="bg-background">
+                        {store}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* サービスアカウントキー */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            サービスアカウント認証
+        {/* Service Account Key */}
+        <div className="glass-panel rounded-2xl p-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            Authentication
           </h2>
 
           {!showKeyInput ? (
             <button
               onClick={() => setShowKeyInput(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-foreground-muted hover:text-white hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2"
             >
-              サービスアカウントキーを設定/更新
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Set or Update Service Account Key</span>
             </button>
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                サービスアカウントキー（JSON） <span className="text-red-500">*</span>
+            <div className="space-y-4">
+              <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                Service Account Key (JSON) <span className="text-error">*</span>
               </label>
               <textarea
                 value={config.serviceAccountKey}
                 onChange={(e) => setConfig({ ...config, serviceAccountKey: e.target.value })}
                 placeholder='{"type": "service_account", "project_id": "...", ...}'
                 rows={10}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-background/50 border border-white/10 rounded-xl text-white font-mono text-xs placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-all"
               />
-              <p className="mt-2 text-sm text-gray-500">
-                Google Cloud ConsoleからダウンロードしたサービスアカウントキーのJSON内容を貼り付けてください
-              </p>
-              <div className="mt-3 flex gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-foreground-muted">
+                  Paste the content of the JSON key file downloaded from Google Cloud Console.
+                </p>
                 <button
                   onClick={() => setShowKeyInput(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="text-sm text-foreground-muted hover:text-white transition-colors"
                 >
-                  キャンセル
+                  Cancel
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* アクションボタン */}
-        <div className="flex gap-4">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4 pt-4 border-t border-white/5">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? '保存中...' : '設定を保存'}
+            {saving ? 'Saving...' : 'Save Configuration'}
           </button>
 
           <button
             onClick={handleTestConnection}
             disabled={testing || !config.gcpProjectId}
-            className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-surface hover:bg-surface-highlight border border-white/10 text-white font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {testing ? 'テスト中...' : '接続テスト'}
+            {testing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Testing...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Test Connection
+              </>
+            )}
           </button>
         </div>
 
-        {/* テスト結果 */}
+        {/* Test Result */}
         {testResult && (
-          <div className={`mt-6 p-4 rounded-md ${
-            testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-          }`}>
-            <h3 className={`font-semibold ${
-              testResult.success ? 'text-green-900' : 'text-red-900'
+          <div className={`p-4 rounded-xl border flex items-start gap-3 animate-fade-in ${testResult.success
+              ? 'bg-success/10 border-success/20 text-success'
+              : 'bg-error/10 border-error/20 text-error'
             }`}>
-              {testResult.success ? '✓ 接続成功' : '✗ 接続失敗'}
-            </h3>
-            {testResult.error && (
-              <p className="mt-2 text-sm text-red-700">{testResult.error}</p>
+            {testResult.success ? (
+              <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             )}
-            {testResult.projectId && (
-              <p className="mt-2 text-sm text-green-700">
-                プロジェクト: {testResult.projectId}
-              </p>
-            )}
+            <div>
+              <h3 className="font-bold">
+                {testResult.success ? 'Connection Successful' : 'Connection Failed'}
+              </h3>
+              {testResult.error && (
+                <p className="mt-1 text-sm opacity-90">{testResult.error}</p>
+              )}
+              {testResult.projectId && (
+                <p className="mt-1 text-sm opacity-90">
+                  Connected to project: <span className="font-mono">{testResult.projectId}</span>
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -28,10 +28,10 @@ export default function UploadPage() {
       try {
         // DICOMファイルをArrayBufferとして読み込み
         const arrayBuffer = await file.arrayBuffer();
-        
+
         // DICOMメタデータをパース
         const metadata = parseDicomFile(arrayBuffer);
-        
+
         newParsedFiles.push({
           file,
           metadata: {
@@ -64,13 +64,13 @@ export default function UploadPage() {
     setParsedFiles(prev => {
       const updated = [...prev];
       updated[fileIndex].metadata[fieldKey] = newValue;
-      
+
       // fullMetadataも更新
       if (updated[fileIndex].metadata.fullMetadata) {
         const capitalizedKey = fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1);
         updated[fileIndex].metadata.fullMetadata[capitalizedKey] = newValue;
       }
-      
+
       return updated;
     });
   };
@@ -103,7 +103,7 @@ export default function UploadPage() {
 
     // エラーがあるファイルを除外
     const validFiles = parsedFiles.filter(f => f.status === 'success');
-    
+
     if (validFiles.length === 0) {
       alert('有効なファイルがありません。');
       return;
@@ -127,7 +127,7 @@ export default function UploadPage() {
     // アップロード処理
     for (let i = 0; i < validFiles.length; i++) {
       const fileData = validFiles[i];
-      
+
       setUploadProgress(prev => ({
         ...prev,
         currentFile: fileData.file.name,
@@ -152,7 +152,7 @@ export default function UploadPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          
+
           // 409エラー（既にアップロード済み）の場合は警告として扱う
           if (response.status === 409) {
             results.push({
@@ -160,20 +160,20 @@ export default function UploadPage() {
               status: 'warning',
               error: errorData.error || 'このファイルは既にアップロード済みです',
             });
-            
+
             setUploadProgress(prev => ({
               ...prev,
               completed: prev.completed + 1, // 完了としてカウント
             }));
-            
+
             continue; // 次のファイルへ
           }
-          
+
           throw new Error(errorData.error || 'Upload failed');
         }
 
         const result = await response.json();
-        
+
         results.push({
           filename: fileData.file.name,
           status: 'success',
@@ -186,7 +186,7 @@ export default function UploadPage() {
         }));
       } catch (error) {
         console.error(`Upload failed for ${fileData.file.name}:`, error);
-        
+
         results.push({
           filename: fileData.file.name,
           status: 'failed',
@@ -224,72 +224,103 @@ export default function UploadPage() {
   return (
     <Layout requireAuth={true}>
       <Head>
-        <title>アップロード - DICOM Batch Uploader</title>
+        <title>Upload - DICOM Cloud</title>
       </Head>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            DICOMファイルアップロード
-          </h1>
-          <p className="mt-2 text-gray-600">
-            DICOMファイルを選択してメタデータを確認・編集した後、DICOM Storeにアップロードします
-          </p>
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              Upload DICOM Files
+            </h1>
+            <p className="mt-1 text-foreground-muted">
+              Securely transfer medical imaging data to the cloud.
+            </p>
+          </div>
+          <div className="hidden sm:block">
+            <div className="px-4 py-2 rounded-lg bg-surface border border-white/5 text-xs text-foreground-muted">
+              Supported formats: <span className="text-primary">.dcm</span>
+            </div>
+          </div>
         </div>
 
-        {/* ファイル選択 */}
-        <div className="mb-8">
-          <FileDropzone 
+        {/* File Selection Area */}
+        <div className="glass-panel rounded-2xl p-1">
+          <FileDropzone
             onFilesSelected={handleFilesSelected}
             disabled={isParsing || isUploading}
           />
-          
+
           {isParsing && (
-            <div className="mt-4 text-center">
-              <div className="inline-flex items-center gap-2 text-indigo-600">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-                <span>DICOMファイルを解析中...</span>
+            <div className="p-8 text-center">
+              <div className="inline-flex flex-col items-center gap-3">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 border-2 border-primary/20 rounded-full"></div>
+                  <div className="absolute inset-0 border-2 border-primary rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <span className="text-primary font-medium animate-pulse">Parsing DICOM metadata...</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* メタデータテーブル */}
+        {/* Metadata Table */}
         {parsedFiles.length > 0 && (
-          <div className="mb-8">
+          <div className="space-y-6 animate-fade-in">
             <MetadataTable
               parsedFiles={parsedFiles}
               onMetadataEdit={handleMetadataEdit}
               onRemoveFile={handleRemoveFile}
             />
 
-            {/* アクションボタン */}
-            <div className="mt-6 flex items-center justify-between">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
               <button
                 onClick={handleClearAll}
                 disabled={isUploading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-foreground-muted hover:text-error transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                すべてクリア
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear All
               </button>
 
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-gray-600">
-                  有効なファイル: <span className="font-medium text-gray-900">{validFilesCount}</span>件
+              <div className="flex items-center gap-6">
+                <div className="text-sm text-foreground-muted">
+                  Valid files: <span className="font-bold text-white">{validFilesCount}</span>
                 </div>
                 <button
                   onClick={handleUpload}
                   disabled={isUploading || validFilesCount === 0}
-                  className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative group px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
                 >
-                  {isUploading ? 'アップロード中...' : `${validFilesCount}件をアップロード`}
+                  <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 -skew-x-12 -translate-x-full"></div>
+                  <span className="relative flex items-center gap-2">
+                    {isUploading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Upload {validFilesCount} Files
+                      </>
+                    )}
+                  </span>
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* アップロード進捗 */}
+        {/* Upload Progress */}
         <UploadProgress
           total={uploadProgress.total}
           completed={uploadProgress.completed}

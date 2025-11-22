@@ -68,7 +68,7 @@ export default function BrowsePage() {
 
     // # データセット作成
     // gcloud healthcare datasets create my-dataset --location=asia-northeast1
-    
+
     // # DICOM Store作成
     // gcloud healthcare dicom-stores create my-dicom-store \
     //   --dataset=my-dataset \
@@ -101,7 +101,7 @@ export default function BrowsePage() {
 
     // PapaparseでCSV生成（UTF-8 BOM付き）
     const csv = '\uFEFF' + Papa.unparse(csvData);
-    
+
     // ダウンロード
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -130,37 +130,55 @@ export default function BrowsePage() {
   return (
     <Layout requireAuth={true}>
       <Head>
-        <title>データ閲覧 - DICOM Batch Uploader</title>
+        <title>Browse Data - DICOM Cloud</title>
       </Head>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">データ閲覧</h1>
-          <p className="mt-2 text-gray-600">
-            アップロード済みのDICOMインスタンスを閲覧・検索できます
-          </p>
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Data Browser</h1>
+            <p className="mt-1 text-foreground-muted">
+              Search and manage uploaded DICOM instances.
+            </p>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 bg-surface hover:bg-surface-highlight border border-white/10 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2 group"
+          >
+            <svg className="w-4 h-4 text-success group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </button>
         </div>
 
-        {/* 検索とフィルター */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  検索（患者名、患者ID、Study UID）
+        {/* Search and Filters */}
+        <div className="glass-panel rounded-2xl p-6">
+          <form onSubmit={handleSearch} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-8">
+                <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                  Search Query
                 </label>
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="検索キーワードを入力..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search by Patient Name, ID, or Study UID..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-background/50 border border-white/10 rounded-xl text-white placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  モダリティ
+              <div className="md:col-span-4">
+                <label className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                  Modality
                 </label>
                 <select
                   value={modality}
@@ -168,10 +186,10 @@ export default function BrowsePage() {
                     setModality(e.target.value);
                     setPagination(prev => ({ ...prev, page: 1 }));
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-background/50 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none"
                 >
                   {modalityOptions.map(option => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} className="bg-background text-white">
                       {option.label}
                     </option>
                   ))}
@@ -179,142 +197,147 @@ export default function BrowsePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              >
-                検索
-              </button>
+            <div className="flex items-center justify-end gap-4 pt-2 border-t border-white/5">
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                className="px-6 py-2 text-sm font-medium text-foreground-muted hover:text-white transition-colors"
               >
-                クリア
+                Clear Filters
               </button>
-              <div className="flex-1"></div>
               <button
-                type="button"
-                onClick={handleExportCSV}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                type="submit"
+                className="px-8 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                CSV エクスポート
+                Search
               </button>
             </div>
           </form>
         </div>
 
-        {/* データテーブル */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              検索結果: {pagination.total}件
+        {/* Data Table */}
+        <div className="glass-panel rounded-2xl overflow-hidden min-h-[400px] flex flex-col">
+          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-surface-highlight/30">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Results <span className="text-foreground-muted font-normal">({pagination.total})</span>
             </h2>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs text-foreground-muted">
               {pagination.totalPages > 0 && (
-                <>
-                  ページ {pagination.page} / {pagination.totalPages}
-                </>
+                <>Page {pagination.page} of {pagination.totalPages}</>
               )}
             </div>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="inline-flex items-center gap-2 text-gray-600">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                <span>読み込み中...</span>
+            <div className="flex-1 flex items-center justify-center p-12">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 border-2 border-primary/20 rounded-full"></div>
+                  <div className="absolute inset-0 border-2 border-primary rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <span className="text-foreground-muted animate-pulse">Loading data...</span>
               </div>
             </div>
           ) : instances.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-gray-600">データが見つかりません</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-16 h-16 bg-surface-highlight rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white">No results found</h3>
+              <p className="text-foreground-muted mt-1 max-w-sm">
+                Try adjusting your search filters or upload new DICOM files.
+              </p>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto flex-1">
+                <table className="min-w-full divide-y divide-white/5">
+                  <thead className="bg-surface-highlight/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        患者情報
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Patient
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        検査情報
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Study Info
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        モダリティ
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Modality
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        UID
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        UIDs
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        アップロード
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Uploaded
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        削除予定日
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Expires
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-white/5 bg-transparent">
                     {instances.map((instance) => (
-                      <tr key={instance.id} className="hover:bg-gray-50">
+                      <tr key={instance.id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {instance.patientName || '-'}
+                          <div className="text-sm font-medium text-white group-hover:text-primary transition-colors">
+                            {instance.patientName || 'Unknown'}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {instance.patientId || '-'}
+                          <div className="text-xs text-foreground-muted mt-0.5 font-mono">
+                            {instance.patientId || 'No ID'}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {instance.studyDescription || '-'}
+                          <div className="text-sm text-white">
+                            {instance.studyDescription || 'No Description'}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {instance.studyDate 
+                          <div className="text-xs text-foreground-muted mt-0.5">
+                            {instance.studyDate
                               ? new Date(instance.studyDate).toLocaleDateString('ja-JP')
                               : '-'
                             }
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                            {instance.modality || '-'}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                            {instance.modality || 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-xs text-gray-500 space-y-1">
-                            <div className="truncate max-w-xs" title={instance.studyInstanceUid}>
-                              Study: {instance.studyInstanceUid}
+                          <div className="text-xs text-foreground-muted space-y-1 font-mono">
+                            <div className="truncate max-w-[150px] opacity-70 hover:opacity-100 transition-opacity cursor-help" title={`Study: ${instance.studyInstanceUid}`}>
+                              S: {instance.studyInstanceUid}
                             </div>
-                            <div className="truncate max-w-xs" title={instance.seriesInstanceUid}>
-                              Series: {instance.seriesInstanceUid}
-                            </div>
-                            <div className="truncate max-w-xs" title={instance.sopInstanceUid}>
-                              Instance: {instance.sopInstanceUid}
+                            <div className="truncate max-w-[150px] opacity-70 hover:opacity-100 transition-opacity cursor-help" title={`Series: ${instance.seriesInstanceUid}`}>
+                              Se: {instance.seriesInstanceUid}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {instance.user?.name || '-'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {instance.uploadedAt 
-                              ? new Date(instance.uploadedAt).toLocaleDateString('ja-JP')
-                              : '-'
-                            }
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-surface-highlight flex items-center justify-center text-xs font-bold text-foreground-muted">
+                              {instance.user?.name?.[0] || '?'}
+                            </div>
+                            <div>
+                              <div className="text-sm text-white">
+                                {instance.user?.name || 'Unknown'}
+                              </div>
+                              <div className="text-xs text-foreground-muted">
+                                {instance.uploadedAt
+                                  ? new Date(instance.uploadedAt).toLocaleDateString('ja-JP')
+                                  : '-'
+                                }
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {instance.expiresAt 
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground-muted">
+                          {instance.expiresAt
                             ? new Date(instance.expiresAt).toLocaleDateString('ja-JP')
-                            : '-'
+                            : <span className="text-white/20">-</span>
                           }
                         </td>
                       </tr>
@@ -323,25 +346,25 @@ export default function BrowsePage() {
                 </table>
               </div>
 
-              {/* ページネーション */}
+              {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-surface-highlight/30">
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                     disabled={pagination.page === 1}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-white bg-surface border border-white/10 rounded-lg hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    前へ
+                    Previous
                   </button>
-                  <span className="text-sm text-gray-700">
-                    ページ {pagination.page} / {pagination.totalPages}
+                  <span className="text-sm text-foreground-muted">
+                    Page <span className="text-white font-medium">{pagination.page}</span> of {pagination.totalPages}
                   </span>
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                     disabled={pagination.page === pagination.totalPages}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-white bg-surface border border-white/10 rounded-lg hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    次へ
+                    Next
                   </button>
                 </div>
               )}
