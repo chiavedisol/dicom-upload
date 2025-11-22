@@ -9,14 +9,29 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@prisma/client": "5.20.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.12",
+    "axios": "^1.13.2",
+    "dcmjs": "^0.45.0",
+    "dicom-parser": "^1.8.21",
+    "encoding-japanese": "^2.2.0",
+    "google-auth-library": "^10.5.0",
     "next": "16.0.3",
+    "next-auth": "^4.24.13",
+    "p-queue": "^9.0.1",
+    "papaparse": "^5.5.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-dropzone": "^14.3.8",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "prisma": "5.20.0",
     "tailwindcss": "^4"
   }
 }

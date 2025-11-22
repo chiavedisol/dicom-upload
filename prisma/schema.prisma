@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ユーザー管理テーブル
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          String    @default("pending") // 'admin', 'user', 'pending'
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+  
+  // リレーション
+  uploadBatches UploadBatch[]
+  dicomInstances DicomInstance[]
+  metadataEdits MetadataEdit[]
+  accounts      Account[]
+  sessions      Session[]
+  
+  @@map("users")
+}
+
+// NextAuth用テーブル
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// アップロードバッチ管理テーブル
+model UploadBatch {
+  id              String    @id @default(cuid())
+  userId          String
+  totalFiles      Int
+  successfulFiles Int       @default(0)
+  failedFiles     Int       @default(0)
+  status          String    @default("processing") // 'processing', 'completed', 'failed', 'cancelled'
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  expiresAt       DateTime
+  
+  // リレーション
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dicomInstances  DicomInstance[]
+  
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("upload_batches")
+}
+
+// DICOMインスタンス管理テーブル
+model DicomInstance {
+  id                  String    @id @default(cuid())
+  uploadBatchId       String?
+  userId              String
+  
+  // DICOM UIDs
+  studyInstanceUid    String
+  seriesInstanceUid   String
+  sopInstanceUid      String    @unique
+  
+  // Patient Information
+  patientId           String?
+  patientName         String?
+  patientBirthDate    DateTime?
+  patientSex          String?
+  
+  // Study Information
+  studyDate           DateTime?
+  studyTime           String?
+  studyDescription    String?
+  accessionNumber     String?
+  
+  // Series Information
+  modality            String?
+  seriesNumber        Int?
+  seriesDescription   String?
+  
+  // Instance Information
+  instanceNumber      Int?
+  rows                Int?
+  columns             Int?
+  numberOfFrames      Int?
+  
+  // Device Information
+  manufacturer        String?
+  manufacturerModelName String?
+  bodyPartExamined    String?
+  
+  // Full Metadata (JSON stored as String for SQLite)
+  fullMetadata        String?
+  
+  // Upload Status
+  uploadStatus        String    @default("pending") // 'pending', 'uploaded', 'failed'
+  errorMessage        String?
+  fileSize            BigInt?
+  originalFilename    String?
+  
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  uploadedAt          DateTime?
+  expiresAt           DateTime
+  
+  // リレーション
+  uploadBatch         UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: Cascade)
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadataEdits       MetadataEdit[]
+  
+  @@index([studyInstanceUid])
+  @@index([seriesInstanceUid])
+  @@index([sopInstanceUid])
+  @@index([userId])
+  @@index([uploadBatchId])
+  @@index([patientName])
+  @@index([studyDate])
+  @@index([modality])
+  @@index([expiresAt])
+  @@map("dicom_instances")
+}
+
+// メタデータ編集履歴テーブル
+model MetadataEdit {
+  id              String    @id @default(cuid())
+  dicomInstanceId String
+  userId          String
+  fieldName       String
+  oldValue        String?
+  newValue        String?
+  editedAt        DateTime  @default(now())
+  
+  // リレーション
+  dicomInstance   DicomInstance @relation(fields: [dicomInstanceId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([dicomInstanceId])
+  @@index([userId])
+  @@map("metadata_edits")
+}
+
+// Google Cloud設定テーブル
+model CloudConfig {
+  id                     String    @id @default(cuid())
+  
+  // Google Cloud設定
+  gcpProjectId           String?
+  gcpLocation            String    @default("asia-northeast1")
+  gcpDatasetId           String?
+  gcpDicomStoreId        String?
+  
+  // サービスアカウント情報（暗号化推奨）
+  serviceAccountKey      String?   // JSON文字列として保存
+  
+  // 接続状態
+  isConfigured           Boolean   @default(false)
+  lastTestedAt           DateTime?
+  connectionStatus       String    @default("not_tested") // 'not_tested', 'success', 'failed'
+  connectionError        String?
+  
+  // 更新情報
+  updatedBy              String?
+  updatedAt              DateTime  @updatedAt
+  createdAt              DateTime  @default(now())
+  
+  @@map("cloud_config")
+}
