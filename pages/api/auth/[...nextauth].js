@@ -22,6 +22,12 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account }) {
       try {
+        // 環境変数の確認
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+          console.error('Missing Google OAuth credentials');
+          throw new Error('ConfigurationError');
+        }
+
         // ユーザーがDBに存在するか確認
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
@@ -50,8 +56,28 @@ export const authOptions = {
         console.error('Error details:', {
           message: error.message,
           stack: error.stack,
-          user: user?.email
+          user: user?.email,
+          code: error.code,
+          meta: error.meta
         });
+
+        // エラーの種類を判定してログに記録
+        let errorType = 'AccessDenied';
+        
+        if (error.message === 'ConfigurationError') {
+          errorType = 'Configuration';
+          console.error('Configuration error: Missing Google OAuth credentials');
+        } else if (error.code === 'P1001' || error.code === 'P1002' || error.code === 'P1003') {
+          errorType = 'DatabaseConnection';
+          console.error('Database connection error detected');
+        } else if (error.code?.startsWith('P')) {
+          // その他のPrismaエラー
+          errorType = 'DatabaseConnection';
+          console.error('Database error:', error.code);
+        }
+        
+        // エラータイプをURLパラメータとして渡すために、falseを返してNextAuthにエラーハンドリングを委譲
+        // エラーページで詳細なメッセージを表示
         return false;
       }
     },

@@ -24,14 +24,43 @@ export default function SignIn() {
           </div>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-800">
-                {error === 'AccessDenied' && 'アクセスが拒否されました。'}
-                {error === 'Configuration' && '設定エラーが発生しました。'}
-                {error === 'Verification' && '認証に失敗しました。'}
-                {!['AccessDenied', 'Configuration', 'Verification'].includes(error) && 
-                  'ログイン中にエラーが発生しました。'}
-              </p>
+            <div className="mb-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-3">
+                <p className="text-sm text-red-800">
+                  {error === 'AccessDenied' && 'アクセスが拒否されました。アカウントが承認されていない可能性があります。'}
+                  {error === 'Configuration' && '設定エラーが発生しました。Google OAuthの設定を確認してください。'}
+                  {error === 'DatabaseConnection' && 'データベースへの接続に失敗しました。管理者にお問い合わせください。'}
+                  {error === 'Verification' && '認証トークンの検証に失敗しました。再度お試しください。'}
+                  {error === 'OAuthSignin' && 'Google認証の初期化に失敗しました。もう一度お試しください。問題が続く場合は、管理者にお問い合わせください。'}
+                  {error === 'Callback' && 'Google認証のコールバック処理に失敗しました。データベースの設定を確認してください。'}
+                  {error === 'OAuthCallback' && 'Google認証のコールバック処理に失敗しました。もう一度お試しください。'}
+                  {error === 'OAuthCreateAccount' && 'アカウント作成中にエラーが発生しました。管理者にお問い合わせください。'}
+                  {error === 'OAuthAccountNotLinked' && 'このGoogleアカウントは別のアカウントに既にリンクされています。'}
+                  {error === 'EmailSignin' && 'メール認証に失敗しました。'}
+                  {error === 'CredentialsSignin' && '認証情報が正しくありません。'}
+                  {error === 'SessionRequired' && 'ログインが必要です。'}
+                  {!['AccessDenied', 'Configuration', 'DatabaseConnection', 'Verification', 'OAuthSignin', 'Callback', 'OAuthCallback', 'OAuthCreateAccount', 'OAuthAccountNotLinked', 'EmailSignin', 'CredentialsSignin', 'SessionRequired'].includes(error) && 
+                    `ログイン中にエラーが発生しました。エラーコード: ${error}`}
+                </p>
+                {process.env.NODE_ENV === 'development' && (
+                  <p className="text-xs text-red-600 mt-2 font-mono">
+                    開発モード: {error}
+                  </p>
+                )}
+              </div>
+              {(error === 'OAuthSignin' || error === 'Callback' || error === 'OAuthCallback' || error === 'Configuration') && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-xs text-blue-700 font-semibold mb-2">
+                    <strong>確認事項:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+                    <li>データベースが正しく初期化されているか確認（<code className="bg-blue-100 px-1 rounded">npx prisma migrate dev</code>を実行）</li>
+                    <li>Google Cloud ConsoleでOAuth設定とリダイレクトURIを確認</li>
+                    <li>環境変数（GOOGLE_CLIENT_ID、GOOGLE_CLIENT_SECRET、NEXTAUTH_URL）が正しく設定されているか確認</li>
+                    <li>開発サーバーのコンソールログで詳細なエラーメッセージを確認</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

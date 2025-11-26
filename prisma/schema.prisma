@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -133,7 +133,7 @@ model DicomInstance {
   manufacturerModelName String?
   bodyPartExamined    String?
   
-  // Full Metadata (JSON stored as String for SQLite)
+  // Full Metadata (JSON stored as String, can be changed to Json? for PostgreSQL)
   fullMetadata        String?
   
   // Upload Status
