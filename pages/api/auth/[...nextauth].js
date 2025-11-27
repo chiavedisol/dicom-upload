@@ -3,26 +3,34 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../lib/prisma";
 
-// 環境変数の検証
+// 環境変数の検証（警告のみ、初期化は停止しない）
 function validateEnvVars() {
   const required = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
   const missing = required.filter(key => !process.env[key]);
   
   if (missing.length > 0) {
-    console.error('Missing required environment variables:', missing);
-    throw new Error(`ConfigurationError: Missing ${missing.join(', ')}`);
+    console.warn('Missing required environment variables:', missing);
+    console.warn('NextAuth may not work correctly without these variables');
   }
 }
 
-// 環境変数を検証（初期化時）
+// 環境変数を検証（警告のみ）
+validateEnvVars();
+
+// Prismaアダプターの初期化を安全に行う
+let adapter;
 try {
-  validateEnvVars();
+  adapter = PrismaAdapter(prisma);
 } catch (error) {
-  console.error('Environment validation failed:', error.message);
+  console.error('Failed to initialize PrismaAdapter:', error);
+  console.error('NextAuth will continue without adapter, but database sessions will not work');
+  // アダプターの初期化に失敗した場合、undefinedのままにする
+  // NextAuthはアダプターがundefinedの場合、JWTセッション戦略にフォールバックする
 }
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
+  // アダプターが初期化に成功した場合のみ使用
+  ...(adapter && { adapter: adapter }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -118,22 +126,29 @@ export const authOptions = {
         return false;
       }
     },
-    async session({ session, user }) {
+    async session({ session, user, token }) {
       try {
-        // データベースから最新のユーザー情報を取得
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email },
-          });
+        // データベースセッション戦略の場合
+        if (user && user.email) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email },
+            });
 
-          if (dbUser) {
-            session.user.id = dbUser.id;
-            session.user.role = dbUser.role;
+            if (dbUser) {
+              session.user.id = dbUser.id;
+              session.user.role = dbUser.role;
+            }
+          } catch (dbError) {
+            console.error('Session database error:', dbError);
+            // データベースエラーが発生しても、既存のセッション情報を返す
+            // これにより、データベース接続の問題でセッションが完全に失われることを防ぐ
           }
-        } catch (dbError) {
-          console.error('Session database error:', dbError);
-          // データベースエラーが発生しても、既存のセッション情報を返す
-          // これにより、データベース接続の問題でセッションが完全に失われることを防ぐ
+        }
+        // JWTセッション戦略の場合（tokenから情報を取得）
+        else if (token) {
+          session.user.id = token.id;
+          session.user.role = token.role;
         }
 
         return session;
@@ -142,6 +157,25 @@ export const authOptions = {
         // エラーが発生してもセッションを返す（フォールバック）
         return session;
       }
+    },
+    async jwt({ token, user, account }) {
+      // JWTセッション戦略の場合、トークンにユーザー情報を追加
+      if (user) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+          }
+        } catch (dbError) {
+          console.error('JWT database error:', dbError);
+          // エラーが発生しても続行
+        }
+      }
+      return token;
     },
     async redirect({ url, baseUrl }) {
       // 承認待ちの場合は専用ページへ
@@ -157,13 +191,45 @@ export const authOptions = {
     error: '/auth/error',
   },
   session: {
-    strategy: 'database',
+    // アダプターが利用可能な場合のみデータベースセッションを使用
+    // そうでない場合はJWTセッションにフォールバック
+    strategy: adapter ? 'database' : 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   debug: process.env.NODE_ENV === 'development',
 };
 
-export default NextAuth(authOptions);
+// NextAuthハンドラーをラップしてエラーハンドリングを改善
+const handler = NextAuth(authOptions);
+
+export default async function authHandler(req, res) {
+  try {
+    // NextAuthハンドラーを実行
+    return await handler(req, res);
+  } catch (error) {
+    console.error('NextAuth handler error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      url: req.url,
+      method: req.method
+    });
+
+    // JSONレスポンスを返す（HTMLではなく）
+    // NextAuthのクライアントがJSONを期待しているため
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'InternalServerError',
+        message: 'An error occurred while processing the authentication request',
+        ...(process.env.NODE_ENV === 'development' && {
+          details: error.message,
+          stack: error.stack
+        })
+      });
+    }
+  }
+}
 
 
 
