@@ -3,6 +3,24 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "../../../lib/prisma";
 
+// 環境変数の検証
+function validateEnvVars() {
+  const required = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    console.error('Missing required environment variables:', missing);
+    throw new Error(`ConfigurationError: Missing ${missing.join(', ')}`);
+  }
+}
+
+// 環境変数を検証（初期化時）
+try {
+  validateEnvVars();
+} catch (error) {
+  console.error('Environment validation failed:', error.message);
+}
+
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -29,9 +47,19 @@ export const authOptions = {
         }
 
         // ユーザーがDBに存在するか確認
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        });
+        let existingUser;
+        try {
+          existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+        } catch (dbError) {
+          console.error('Database query failed:', dbError);
+          // データベースエラーの場合、接続を再試行
+          if (dbError.code?.startsWith('P')) {
+            throw new Error('DatabaseConnection');
+          }
+          throw dbError;
+        }
 
         if (!existingUser) {
           // 新規ユーザーの場合、Adapterが自動的に作成するのでtrueを返す
@@ -45,10 +73,15 @@ export const authOptions = {
         }
 
         // 承認済みユーザーの最終ログイン時刻を更新
-        await prisma.user.update({
-          where: { email: user.email },
-          data: { lastLoginAt: new Date() },
-        });
+        try {
+          await prisma.user.update({
+            where: { email: user.email },
+            data: { lastLoginAt: new Date() },
+          });
+        } catch (updateError) {
+          // 更新エラーは致命的ではないので、ログだけ記録して続行
+          console.error('Failed to update lastLoginAt:', updateError);
+        }
 
         return true;
       } catch (error) {
@@ -64,10 +97,14 @@ export const authOptions = {
         // エラーの種類を判定してログに記録
         let errorType = 'AccessDenied';
         
-        if (error.message === 'ConfigurationError') {
+        if (error.message === 'ConfigurationError' || error.message?.includes('ConfigurationError')) {
           errorType = 'Configuration';
           console.error('Configuration error: Missing Google OAuth credentials');
-        } else if (error.code === 'P1001' || error.code === 'P1002' || error.code === 'P1003') {
+        } else if (error.message === 'DatabaseConnection' || 
+                   error.code === 'P1001' || 
+                   error.code === 'P1002' || 
+                   error.code === 'P1003' ||
+                   error.code === 'P1017') {
           errorType = 'DatabaseConnection';
           console.error('Database connection error detected');
         } else if (error.code?.startsWith('P')) {
@@ -84,18 +121,25 @@ export const authOptions = {
     async session({ session, user }) {
       try {
         // データベースから最新のユーザー情報を取得
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        });
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
 
-        if (dbUser) {
-          session.user.id = dbUser.id;
-          session.user.role = dbUser.role;
+          if (dbUser) {
+            session.user.id = dbUser.id;
+            session.user.role = dbUser.role;
+          }
+        } catch (dbError) {
+          console.error('Session database error:', dbError);
+          // データベースエラーが発生しても、既存のセッション情報を返す
+          // これにより、データベース接続の問題でセッションが完全に失われることを防ぐ
         }
 
         return session;
       } catch (error) {
         console.error('Session error:', error);
+        // エラーが発生してもセッションを返す（フォールバック）
         return session;
       }
     },
